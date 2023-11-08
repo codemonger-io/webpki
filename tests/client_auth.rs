@@ -38,7 +38,7 @@ fn check_cert(ee: &[u8], ca: &[u8]) -> Result<(), webpki::Error> {
         ALL_SIGALGS,
         anchors,
         &[],
-        time,
+        Some(time),
         KeyUsage::client_auth(),
         &[],
     )

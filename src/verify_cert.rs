@@ -29,7 +29,7 @@ pub(crate) struct ChainOptions<'a> {
     pub(crate) crls: &'a [&'a dyn CertRevocationList],
 }
 
-pub(crate) fn build_chain(opts: &ChainOptions, cert: &Cert, time: time::Time) -> Result<(), Error> {
+pub(crate) fn build_chain(opts: &ChainOptions, cert: &Cert, time: Option<time::Time>) -> Result<(), Error> {
     build_chain_inner(opts, cert, time, 0, &mut Budget::default()).map_err(|e| match e {
         ControlFlow::Break(err) => err,
         ControlFlow::Continue(err) => err,
@@ -39,7 +39,7 @@ pub(crate) fn build_chain(opts: &ChainOptions, cert: &Cert, time: time::Time) ->
 fn build_chain_inner(
     opts: &ChainOptions,
     cert: &Cert,
-    time: time::Time,
+    time: Option<time::Time>,
     sub_ca_count: usize,
     budget: &mut Budget,
 ) -> Result<(), ControlFlow<Error, Error>> {
@@ -328,7 +328,7 @@ fn crl_signature_err(err: Error) -> Error {
 
 fn check_issuer_independent_properties(
     cert: &Cert,
-    time: time::Time,
+    time: Option<time::Time>,
     used_as_ca: UsedAsCa,
     sub_ca_count: usize,
     eku: ExtendedKeyUsage,
@@ -344,8 +344,10 @@ fn check_issuer_independent_properties(
     // though it would be kind of nice to ensure that a KeyUsage without
     // the keyEncipherment bit could not be used for RSA key exchange.
 
-    cert.validity
-        .read_all(Error::BadDer, |value| check_validity(value, time))?;
+    if let Some(time) = time {
+        cert.validity
+            .read_all(Error::BadDer, |value| check_validity(value, time))?;
+    }
     untrusted::read_all_optional(cert.basic_constraints, Error::BadDer, |value| {
         check_basic_constraints(value, used_as_ca, sub_ca_count)
     })?;
@@ -829,7 +831,7 @@ mod tests {
                 crls: &[],
             },
             cert.inner(),
-            time,
+            Some(time),
             0,
             &mut budget.unwrap_or_default(),
         )

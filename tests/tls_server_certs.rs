@@ -41,7 +41,7 @@ fn check_cert(
         ALL_SIGALGS,
         &anchors,
         &[],
-        time,
+        Some(time),
         KeyUsage::server_auth(),
         &[],
     )?;

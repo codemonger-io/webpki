@@ -50,7 +50,7 @@ pub fn netflix() {
             ALL_SIGALGS,
             &anchors,
             &[inter],
-            time,
+            Some(time),
             KeyUsage::server_auth(),
             &[]
         )
@@ -76,7 +76,7 @@ pub fn cloudflare_dns() {
             ALL_SIGALGS,
             &anchors,
             &[inter],
-            time,
+            Some(time),
             KeyUsage::server_auth(),
             &[]
         )
@@ -130,7 +130,7 @@ pub fn wpt() {
             ALL_SIGALGS,
             &anchors,
             &[],
-            time,
+            Some(time),
             KeyUsage::server_auth(),
             &[]
         )
@@ -153,7 +153,7 @@ pub fn ed25519() {
             ALL_SIGALGS,
             &anchors,
             &[],
-            time,
+            Some(time),
             KeyUsage::server_auth(),
             &[]
         )
@@ -175,7 +175,7 @@ fn critical_extensions() {
             ALL_SIGALGS,
             &anchors,
             &[ca],
-            time,
+            Some(time),
             KeyUsage::server_auth(),
             &[],
         )
@@ -188,7 +188,7 @@ fn critical_extensions() {
             ALL_SIGALGS,
             &anchors,
             &[ca],
-            time,
+            Some(time),
             KeyUsage::server_auth(),
             &[],
         )
@@ -230,7 +230,7 @@ fn read_ee_with_neg_serial() {
             ALL_SIGALGS,
             &anchors,
             &[],
-            time,
+            Some(time),
             KeyUsage::server_auth(),
             &[]
         )

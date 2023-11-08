@@ -38,7 +38,7 @@ pub fn path_building() {
             &[&webpki::ECDSA_P256_SHA256], // All of the BetterTLS testcases use P256 keys.
             roots,
             intermediates,
-            now,
+            Some(now),
             KeyUsage::server_auth(),
             &[],
         );

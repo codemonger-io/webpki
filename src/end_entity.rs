@@ -81,7 +81,7 @@ impl<'a> EndEntityCert<'a> {
         supported_sig_algs: &[&SignatureAlgorithm],
         trust_anchors: &[TrustAnchor],
         intermediate_certs: &[&[u8]],
-        time: Time,
+        time: Option<Time>,
         eku: KeyUsage,
         crls: &[&dyn CertRevocationList],
     ) -> Result<(), Error> {
@@ -118,7 +118,7 @@ impl<'a> EndEntityCert<'a> {
         supported_sig_algs: &[&SignatureAlgorithm],
         trust_anchors: &[TrustAnchor],
         intermediate_certs: &[&[u8]],
-        time: Time,
+        time: Option<Time>,
         usage: KeyUsage,
         crls: &[&dyn CertRevocationList],
     ) -> Result<(), Error> {
@@ -155,7 +155,7 @@ impl<'a> EndEntityCert<'a> {
         supported_sig_algs: &[&SignatureAlgorithm],
         &TlsServerTrustAnchors(trust_anchors): &TlsServerTrustAnchors,
         intermediate_certs: &[&[u8]],
-        time: Time,
+        time: Option<Time>,
     ) -> Result<(), Error> {
         self.verify_is_valid_cert(
             supported_sig_algs,
@@ -191,7 +191,7 @@ impl<'a> EndEntityCert<'a> {
         supported_sig_algs: &[&SignatureAlgorithm],
         &TlsClientTrustAnchors(trust_anchors): &TlsClientTrustAnchors,
         intermediate_certs: &[&[u8]],
-        time: Time,
+        time: Option<Time>,
         crls: &[&dyn CertRevocationList],
     ) -> Result<(), Error> {
         self.verify_is_valid_cert(

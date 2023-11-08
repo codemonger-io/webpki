@@ -28,7 +28,7 @@ fn check_cert(
         &[&webpki::ECDSA_P256_SHA256],
         anchors,
         intermediates,
-        time,
+        Some(time),
         KeyUsage::client_auth(),
         crls,
     )
