@@ -47,6 +47,7 @@ mod der;
 
 mod calendar;
 mod cert;
+mod cert_policy;
 mod end_entity;
 mod error;
 mod signed_data;
