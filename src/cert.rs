@@ -47,6 +47,7 @@ pub struct Cert<'a> {
     pub(crate) eku: Option<untrusted::Input<'a>>,
     pub(crate) name_constraints: Option<untrusted::Input<'a>>,
     pub(crate) subject_alt_name: Option<untrusted::Input<'a>>,
+    pub(crate) certificate_policies: Option<untrusted::Input<'a>>,
 }
 
 impl<'a> Cert<'a> {
@@ -99,6 +100,7 @@ impl<'a> Cert<'a> {
                 eku: None,
                 name_constraints: None,
                 subject_alt_name: None,
+                certificate_policies: None,
             };
 
             if !tbs.at_end() {
@@ -201,6 +203,9 @@ fn remember_cert_extension<'a>(
 
             // id-ce-nameConstraints 2.5.29.30
             30 => &mut cert.name_constraints,
+
+            // id-ce-certificatePolicies 2.5.29.32
+            32 => &mut cert.certificate_policies,
 
             // id-ce-extKeyUsage 2.5.29.37
             37 => &mut cert.eku,
