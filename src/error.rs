@@ -75,6 +75,9 @@ pub enum Error {
     /// The signature is invalid for the given public key.
     InvalidSignatureForPublicKey,
 
+    /// The certificate policies are invalid.
+    InvalidCertificatePolicies,
+
     /// A CRL was signed by an issuer that has a KeyUsage bitstring that does not include
     /// the cRLSign key usage bit.
     IssuerNotCrlSigner,
@@ -211,6 +214,7 @@ impl Error {
             Error::InvalidNetworkMaskConstraint => 180,
             Error::InvalidSerialNumber => 170,
             Error::InvalidCrlNumber => 160,
+            Error::InvalidCertificatePolicies => 155,
 
             // Errors related to unsupported features.
             Error::UnsupportedCrlSignatureAlgorithmForPublicKey

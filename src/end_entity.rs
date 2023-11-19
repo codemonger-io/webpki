@@ -84,6 +84,7 @@ impl<'a> EndEntityCert<'a> {
         time: Option<Time>,
         eku: KeyUsage,
         crls: &[&dyn CertRevocationList],
+        user_initial_policy_set: &[&[u8]],
     ) -> Result<(), Error> {
         verify_cert::build_chain(
             &verify_cert::ChainOptions {
@@ -92,6 +93,7 @@ impl<'a> EndEntityCert<'a> {
                 trust_anchors,
                 intermediate_certs,
                 crls,
+                user_initial_policy_set,
             },
             &self.inner,
             time,
@@ -129,6 +131,35 @@ impl<'a> EndEntityCert<'a> {
             time,
             usage,
             crls,
+            &[],
+        )
+    }
+
+    /// Verifies also certificate policies in addition to [`verify_for_usage`].
+    ///
+    /// * `user_initial_policy_set` is a set of certificate policy identifiers
+    ///   naming the policies that are acceptable to the certificate user
+    ///   (RFC 5280 Section 6.1.1 (c)). Verification fails if none of
+    ///   certificate policies in this slice is valid in the policy tree. This
+    ///   method is equivalent to [`verify_for_usage`] if this slice is empty.
+    pub fn verify_for_usage_with_policy_check(
+        &self,
+        supported_sig_algs: &[&SignatureAlgorithm],
+        trust_anchors: &[TrustAnchor],
+        intermediate_certs: &[&[u8]],
+        time: Option<Time>,
+        usage: KeyUsage,
+        crls: &[&dyn CertRevocationList],
+        user_initial_policy_set: &[&[u8]],
+    ) -> Result<(), Error> {
+        self.verify_is_valid_cert(
+            supported_sig_algs,
+            trust_anchors,
+            intermediate_certs,
+            time,
+            usage,
+            crls,
+            user_initial_policy_set,
         )
     }
 
@@ -163,6 +194,7 @@ impl<'a> EndEntityCert<'a> {
             intermediate_certs,
             time,
             KeyUsage::server_auth(),
+            &[],
             &[],
         )
     }
@@ -201,6 +233,7 @@ impl<'a> EndEntityCert<'a> {
             time,
             KeyUsage::client_auth(),
             crls,
+            &[],
         )
     }
 

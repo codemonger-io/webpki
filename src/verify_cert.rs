@@ -17,6 +17,7 @@ use core::ops::ControlFlow;
 
 use crate::{
     cert::{Cert, EndEntityOrCa},
+    cert_policy::{read_certificate_policies, CertificatePolicy},
     der, public_values_eq, signed_data, subject_name, time, CertRevocationList, Error,
     SignatureAlgorithm, TrustAnchor,
 };
@@ -27,6 +28,9 @@ pub(crate) struct ChainOptions<'a> {
     pub(crate) trust_anchors: &'a [TrustAnchor<'a>],
     pub(crate) intermediate_certs: &'a [&'a [u8]],
     pub(crate) crls: &'a [&'a dyn CertRevocationList],
+    /// OIDs of acceptable certificate policies.
+    /// RFC 5280 Section 6.1.1 (c)
+    pub(crate) user_initial_policy_set: &'a [&'a [u8]],
 }
 
 pub(crate) fn build_chain(
@@ -86,6 +90,10 @@ fn build_chain_inner(
             )?;
 
             check_signed_chain_name_constraints(cert, trust_anchor, budget)?;
+
+            if !opts.user_initial_policy_set.is_empty() {
+                check_policy_tree(cert, opts.user_initial_policy_set)?;
+            }
 
             Ok(())
         },
@@ -428,6 +436,99 @@ fn check_basic_constraints(
             Err(Error::PathLenConstraintViolated)
         }
         _ => Ok(()),
+    }
+}
+
+// Simplified implementation of certificate policies validation
+// described in RFC 5280 section 6.1
+// https://datatracker.ietf.org/doc/html/rfc5280#section-6.1
+//
+// RFC 5280 section 6.1.2 starts from "any policy", though, this function
+// starts from each policy ID in `user_initial_policy_set` because this
+// function focuses only on verifying if any of acceptable policies is in the
+// valid policy tree.
+fn check_policy_tree(
+    cert_chain: &Cert,
+    user_initial_policy_set: &[&[u8]],
+) -> Result<(), ControlFlow<Error, Error>> {
+    for policy_id in user_initial_policy_set {
+        match check_policy_tree_inner(
+            cert_chain,
+            CertificatePolicy::from_oid(*policy_id),
+        ) {
+            Ok(valid) => {
+                if valid {
+                    return Ok(());
+                }
+            }
+            Err(e) => return Err(ControlFlow::Continue(e)),
+        };
+    }
+    // no acceptable policy was included in the valid policy tree
+    Err(ControlFlow::Continue(Error::InvalidCertificatePolicies))
+}
+
+fn check_policy_tree_inner(
+    cert_chain: &Cert,
+    expected_policy: CertificatePolicy,
+) -> Result<bool, Error> {
+    match cert_chain.certificate_policies {
+        Some(policies) => {
+            // processes policies
+            let mut any_policy: Option<CertificatePolicy> = None;
+            for policy in read_certificate_policies(policies) {
+                let policy = policy?;
+                if policy.is_any() {
+                    // processing of any policy is the last resort
+                    // RFC 5280 section 6.1.3 (d) (2)
+                    if any_policy.is_some() {
+                        // duplicate any policies
+                        return Err(Error::InvalidCertificatePolicies);
+                    }
+                    any_policy.replace(policy);
+                } else {
+                    // RFC 5280 section 6.1.3 (d) (1) (i) || (ii)
+                    if expected_policy.oid() == policy.oid()
+                        || expected_policy.is_any()
+                    {
+                        let valid =
+                            check_policy_tree_next(cert_chain, policy)?;
+                        if valid {
+                            return Ok(true);
+                        }
+                    }
+                }
+            }
+            match any_policy {
+                Some(any_policy) => {
+                    // RFC 5280 section 6.1.3 (d) (2)
+                    check_policy_tree_next(
+                        cert_chain,
+                        expected_policy
+                            .with_qualifiers(any_policy.qualifiers()),
+                    )
+                }
+                None => Ok(false),
+            }
+        }
+        None => {
+            // treats as "any policy"
+            // TODO: unnacceptable in some conditions
+            // - inhibited any policy
+            // - positive explicit policy
+            check_policy_tree_next(cert_chain, CertificatePolicy::any())
+        }
+    }
+}
+
+fn check_policy_tree_next(
+    cert_chain: &Cert,
+    expected_policy: CertificatePolicy,
+) -> Result<bool, Error> {
+    match &cert_chain.ee_or_ca {
+        EndEntityOrCa::EndEntity => Ok(true),
+        EndEntityOrCa::Ca(next_cert) =>
+            check_policy_tree_inner(next_cert, expected_policy),
     }
 }
 
@@ -833,6 +934,7 @@ mod tests {
                 trust_anchors: anchors,
                 intermediate_certs: &intermediates_der,
                 crls: &[],
+                user_initial_policy_set: &[],
             },
             cert.inner(),
             Some(time),
