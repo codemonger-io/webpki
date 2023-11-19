@@ -113,6 +113,65 @@ pub fn cloudflare_dns() {
     check_addr("2606:4700:4700:0000:0000:0000:0000:6400");
 }
 
+// check if `user_initial_policy_set` works.
+// the test fixtures were taken from `core::tests::test_win_hello_attest_tpm` of
+// [`webauthn-rs`](https://docs.rs/webauthn-rs/latest/webauthn_rs/).
+#[cfg(feature = "alloc")]
+#[test]
+pub fn win_hello_attest_tpm() {
+    let ee: &[u8] = include_bytes!("win_hello_attest_tpm/ee.der");
+    let inter = include_bytes!("win_hello_attest_tpm/inter.der");
+    let ca = include_bytes!("win_hello_attest_tpm/ca.der");
+
+    // tcg-kp-AIKCertificate = 2.23.133.8.3
+    let key_usage = KeyUsage::required(&[(40 * 2) + 23, 0x81, 5, 8, 3]);
+
+    let anchors = [webpki::TrustAnchor::try_from_cert_der(ca).unwrap()];
+
+    let cert = webpki::EndEntityCert::try_from(ee).unwrap();
+    assert_eq!(
+        Ok(()),
+        cert.verify_for_usage_with_policy_check(
+            ALL_SIGALGS,
+            &anchors,
+            &[inter],
+            None,
+            key_usage.clone(),
+            &[],
+            // 1.3.6.1.4.1.311.21.31
+            &[&[1 * 40 + 3, 6, 1, 4, 1, 0x82, 55, 21, 31]],
+        )
+    );
+    assert_eq!(
+        Err(webpki::Error::InvalidCertificatePolicies),
+        cert.verify_for_usage_with_policy_check(
+            ALL_SIGALGS,
+            &anchors,
+            &[inter],
+            None,
+            key_usage.clone(),
+            &[],
+            // 1.3.6.1.4.1.311.21.32
+            &[&[1 * 40 + 3, 6, 1, 4, 1, 0x82, 55, 21, 32]],
+        )
+    );
+    assert_eq!(
+        Ok(()),
+        cert.verify_for_usage_with_policy_check(
+            ALL_SIGALGS,
+            &anchors,
+            &[inter],
+            None,
+            key_usage.clone(),
+            &[],
+            &[
+                &[1 * 40 + 3, 6, 1, 4, 1, 0x82, 55, 21, 31],
+                &[1 * 40 + 3, 6, 1, 4, 1, 0x82, 55, 21, 32],
+            ],
+        )
+    );
+}
+
 #[cfg(feature = "alloc")]
 #[test]
 pub fn wpt() {
