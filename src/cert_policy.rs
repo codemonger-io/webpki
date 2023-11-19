@@ -18,7 +18,7 @@ pub(crate) enum CertificatePolicy<'a> {
     Specific {
         oid: untrusted::Input<'a>,
         qualifiers: Option<untrusted::Input<'a>>,
-    }
+    },
 }
 
 impl<'a> CertificatePolicy<'a> {
@@ -43,11 +43,8 @@ impl<'a> CertificatePolicy<'a> {
         }
     }
 
-    /// Creates a policy whose qualifiers are replaced with the given ones. 
-    pub(crate) fn with_qualifiers(
-        &self,
-        qualifiers: Option<&untrusted::Input<'a>>,
-    ) -> Self {
+    /// Creates a policy whose qualifiers are replaced with the given ones.
+    pub(crate) fn with_qualifiers(&self, qualifiers: Option<&untrusted::Input<'a>>) -> Self {
         match self {
             Self::Any { .. } => Self::Any {
                 qualifiers: qualifiers.cloned(),
@@ -78,8 +75,7 @@ impl<'a> CertificatePolicy<'a> {
     /// Returns the policy qualifiers.
     pub(crate) fn qualifiers(&self) -> Option<&untrusted::Input<'a>> {
         match self {
-            Self::Any { qualifiers, .. } |
-            Self::Specific { qualifiers, .. } => qualifiers.as_ref(),
+            Self::Any { qualifiers, .. } | Self::Specific { qualifiers, .. } => qualifiers.as_ref(),
         }
     }
 }
@@ -117,10 +113,12 @@ impl<'a> PartialEq<PolicyOidRef<'_>> for PolicyOidRef<'a> {
         use PolicyOidRef::*;
         match (self, other) {
             (Any, Any) => true,
-            (Any, Specific(oid)) | (Specific(oid), Any) =>
-                oid.as_slice_less_safe() == ANY_POLICY_OID,
-            (Specific(oid1), Specific(oid2)) =>
-                oid1.as_slice_less_safe() == oid2.as_slice_less_safe(),
+            (Any, Specific(oid)) | (Specific(oid), Any) => {
+                oid.as_slice_less_safe() == ANY_POLICY_OID
+            }
+            (Specific(oid1), Specific(oid2)) => {
+                oid1.as_slice_less_safe() == oid2.as_slice_less_safe()
+            }
         }
     }
 }
@@ -128,10 +126,14 @@ impl<'a> PartialEq<PolicyOidRef<'_>> for PolicyOidRef<'a> {
 impl<'a> core::fmt::Display for PolicyOidRef<'a> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         use PolicyOidRef::*;
-        write!(f, "PolicyOID({:?})", match self {
-            Any => ANY_POLICY_OID,
-            Specific(oid) => oid.as_slice_less_safe(),
-        })
+        write!(
+            f,
+            "PolicyOID({:?})",
+            match self {
+                Any => ANY_POLICY_OID,
+                Specific(oid) => oid.as_slice_less_safe(),
+            }
+        )
     }
 }
 
@@ -156,32 +158,26 @@ impl<'a> Iterator for ReadCertificatePolicies<'a> {
         if self.reader.at_end() {
             return None;
         }
-        let policy =
-            der::expect_tag_and_get_value(&mut self.reader, der::Tag::Sequence)
-                .and_then(|policy| {
-                    // https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.4
-                    policy.read_all(Error::BadDer, |policy| {
-                        // must start with the policy ID
-                        let oid = der::expect_tag_and_get_value(
-                            policy,
-                            der::Tag::OID,
-                        )?;
-                        // optional qualifiers may follow
-                        let qualifiers = if policy.at_end() {
-                            None
-                        } else {
-                            Some(der::expect_tag_and_get_value(
-                                policy,
-                                der::Tag::Sequence,
-                            )?)
-                        };
-                        if oid.as_slice_less_safe() == ANY_POLICY_OID {
-                            Ok(CertificatePolicy::Any { qualifiers })
-                        } else {
-                            Ok(CertificatePolicy::Specific { oid, qualifiers })
-                        }
-                    })
-                });
+        let policy = der::expect_tag_and_get_value(&mut self.reader, der::Tag::Sequence).and_then(
+            |policy| {
+                // https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.4
+                policy.read_all(Error::BadDer, |policy| {
+                    // must start with the policy ID
+                    let oid = der::expect_tag_and_get_value(policy, der::Tag::OID)?;
+                    // optional qualifiers may follow
+                    let qualifiers = if policy.at_end() {
+                        None
+                    } else {
+                        Some(der::expect_tag_and_get_value(policy, der::Tag::Sequence)?)
+                    };
+                    if oid.as_slice_less_safe() == ANY_POLICY_OID {
+                        Ok(CertificatePolicy::Any { qualifiers })
+                    } else {
+                        Ok(CertificatePolicy::Specific { oid, qualifiers })
+                    }
+                })
+            },
+        );
         Some(policy)
     }
 }

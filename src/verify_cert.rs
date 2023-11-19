@@ -452,10 +452,7 @@ fn check_policy_tree(
     user_initial_policy_set: &[&[u8]],
 ) -> Result<(), ControlFlow<Error, Error>> {
     for policy_id in user_initial_policy_set {
-        match check_policy_tree_inner(
-            cert_chain,
-            CertificatePolicy::from_oid(*policy_id),
-        ) {
+        match check_policy_tree_inner(cert_chain, CertificatePolicy::from_oid(*policy_id)) {
             Ok(valid) => {
                 if valid {
                     return Ok(());
@@ -488,11 +485,8 @@ fn check_policy_tree_inner(
                     any_policy.replace(policy);
                 } else {
                     // RFC 5280 section 6.1.3 (d) (1) (i) || (ii)
-                    if expected_policy.oid() == policy.oid()
-                        || expected_policy.is_any()
-                    {
-                        let valid =
-                            check_policy_tree_next(cert_chain, policy)?;
+                    if expected_policy.oid() == policy.oid() || expected_policy.is_any() {
+                        let valid = check_policy_tree_next(cert_chain, policy)?;
                         if valid {
                             return Ok(true);
                         }
@@ -504,8 +498,7 @@ fn check_policy_tree_inner(
                     // RFC 5280 section 6.1.3 (d) (2)
                     check_policy_tree_next(
                         cert_chain,
-                        expected_policy
-                            .with_qualifiers(any_policy.qualifiers()),
+                        expected_policy.with_qualifiers(any_policy.qualifiers()),
                     )
                 }
                 None => Ok(false),
@@ -527,8 +520,7 @@ fn check_policy_tree_next(
 ) -> Result<bool, Error> {
     match &cert_chain.ee_or_ca {
         EndEntityOrCa::EndEntity => Ok(true),
-        EndEntityOrCa::Ca(next_cert) =>
-            check_policy_tree_inner(next_cert, expected_policy),
+        EndEntityOrCa::Ca(next_cert) => check_policy_tree_inner(next_cert, expected_policy),
     }
 }
 
