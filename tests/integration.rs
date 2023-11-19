@@ -122,6 +122,7 @@ pub fn win_hello_attest_tpm() {
     let key_usage = KeyUsage::required(&[(40 * 2) + 23, 0x81, 5, 8, 3]); // tcg-kp-AIKCertificate = 2.23.133.8.3
 
     let anchors = [anchor_from_trusted_cert(&ca).unwrap()];
+    let inters = [inter];
 
     let time = UnixTime::since_unix_epoch(Duration::from_secs(1_619_256_684)); // 2021-04-24T09:31:24Z
 
@@ -131,11 +132,77 @@ pub fn win_hello_attest_tpm() {
         .verify_for_usage(
             webpki::ALL_VERIFICATION_ALGS,
             &anchors,
-            &[inter],
+            &inters,
             time,
             key_usage,
             None,
             None,
+        )
+        .is_ok());
+    // checks the policy tree
+    assert!(cert
+        .verify_for_usage(
+            webpki::ALL_VERIFICATION_ALGS,
+            &anchors,
+            &inters,
+            time,
+            key_usage.clone(),
+            None,
+            Some(&|path| webpki::cert_policy::check_policy_tree(
+                path,
+                // 1.3.6.1.4.1.311.21.31
+                &[&[40 + 3, 6, 1, 4, 1, 0x82, 55, 21, 31]],
+            )
+                .map_err(|e| {
+                    eprintln!("{}", e);
+                    webpki::Error::ExtensionValueInvalid
+                })),
+        )
+        .is_ok());
+    assert!(
+        matches!(
+            cert.verify_for_usage(
+                webpki::ALL_VERIFICATION_ALGS,
+                &anchors,
+                &inters,
+                time,
+                key_usage.clone(),
+                None,
+                Some(&|path| webpki::cert_policy::check_policy_tree(
+                    path,
+                    // 1.3.6.1.4.1.311.21.32
+                    &[&[40 + 3, 6, 1, 4, 1, 0x82, 55, 21, 32]],
+                )
+                    .map_err(|e| {
+                        eprintln!("{}", e);
+                        webpki::Error::ExtensionValueInvalid
+                    })),
+            ),
+            Err(webpki::Error::ExtensionValueInvalid),
+        ),
+    );
+    // checks the policy tree
+    assert!(cert
+        .verify_for_usage(
+            webpki::ALL_VERIFICATION_ALGS,
+            &anchors,
+            &inters,
+            time,
+            key_usage.clone(),
+            None,
+            Some(&|path| webpki::cert_policy::check_policy_tree(
+                path,
+                &[
+                    // 1.3.6.1.4.1.311.21.31
+                    &[40 + 3, 6, 1, 4, 1, 0x82, 55, 21, 31],
+                    // 1.3.6.1.4.1.311.21.32
+                    &[40 + 3, 6, 1, 4, 1, 0x82, 55, 21, 32],
+                ],
+            )
+                .map_err(|e| {
+                    eprintln!("{}", e);
+                    webpki::Error::ExtensionValueInvalid
+                })),
         )
         .is_ok());
 }

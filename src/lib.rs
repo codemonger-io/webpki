@@ -50,6 +50,7 @@ mod der;
 #[cfg(feature = "aws_lc_rs")]
 mod aws_lc_rs_algs;
 mod cert;
+pub mod cert_policy;
 mod end_entity;
 mod error;
 #[cfg(feature = "ring")]
