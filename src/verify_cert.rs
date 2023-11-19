@@ -29,7 +29,11 @@ pub(crate) struct ChainOptions<'a> {
     pub(crate) crls: &'a [&'a dyn CertRevocationList],
 }
 
-pub(crate) fn build_chain(opts: &ChainOptions, cert: &Cert, time: Option<time::Time>) -> Result<(), Error> {
+pub(crate) fn build_chain(
+    opts: &ChainOptions,
+    cert: &Cert,
+    time: Option<time::Time>,
+) -> Result<(), Error> {
     build_chain_inner(opts, cert, time, 0, &mut Budget::default()).map_err(|e| match e {
         ControlFlow::Break(err) => err,
         ControlFlow::Continue(err) => err,
