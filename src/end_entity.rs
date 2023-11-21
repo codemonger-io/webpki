@@ -136,13 +136,15 @@ impl<'a> EndEntityCert<'a> {
         )
     }
 
-    /// Verifies also certificate policies in addition to [`verify_for_usage`].
+    /// Verifies also certificate policies in addition to
+    /// [`EndEntityCert::verify_for_usage`].
     ///
     /// * `user_initial_policy_set` is a set of certificate policy identifiers
     ///   naming the policies that are acceptable to the certificate user
     ///   (RFC 5280 Section 6.1.1 (c)). Verification fails if none of
     ///   certificate policies in this slice is valid in the policy tree. This
-    ///   method is equivalent to [`verify_for_usage`] if this slice is empty.
+    ///   method is equivalent to [`EndEntityCert::verify_for_usage`] if this
+    ///   slice is empty.
     #[allow(clippy::too_many_arguments)]
     pub fn verify_for_usage_with_policy_check(
         &self,
