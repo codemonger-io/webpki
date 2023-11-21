@@ -198,6 +198,8 @@ jobs:
   msrv:
     name: MSRV
     runs-on: ubuntu-20.04
+    env:
+      codecov_upload_token: ${{ secrets.CODECOV_UPLOAD_TOKEN }}
     steps:
       - name: Checkout sources
         uses: actions/checkout@v3
@@ -260,8 +262,8 @@ jobs:
         run: cargo llvm-cov --all-features --lcov --output-path ./lcov.info
 
       - name: Report to codecov.io
+        if: ${{ env.codecov_upload_token }}
         uses: codecov/codecov-action@v3
-        if: ${{ secrets.CODECOV_UPLOAD_TOKEN }}
         with:
           token: ${{ secrets.CODECOV_UPLOAD_TOKEN }}
           files: ./lcov.info
