@@ -76,6 +76,7 @@ impl<'a> EndEntityCert<'a> {
         &self.inner
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn verify_is_valid_cert(
         &self,
         supported_sig_algs: &[&SignatureAlgorithm],
@@ -142,6 +143,7 @@ impl<'a> EndEntityCert<'a> {
     ///   (RFC 5280 Section 6.1.1 (c)). Verification fails if none of
     ///   certificate policies in this slice is valid in the policy tree. This
     ///   method is equivalent to [`verify_for_usage`] if this slice is empty.
+    #[allow(clippy::too_many_arguments)]
     pub fn verify_for_usage_with_policy_check(
         &self,
         supported_sig_algs: &[&SignatureAlgorithm],

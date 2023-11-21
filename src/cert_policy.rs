@@ -37,7 +37,7 @@ impl<'a> CertificatePolicy<'a> {
             Self::Any { qualifiers: None }
         } else {
             Self::Specific {
-                oid: oid.into(),
+                oid,
                 qualifiers: None,
             }
         }
@@ -50,7 +50,7 @@ impl<'a> CertificatePolicy<'a> {
                 qualifiers: qualifiers.cloned(),
             },
             Self::Specific { oid, .. } => Self::Specific {
-                oid: oid.clone(),
+                oid: *oid,
                 qualifiers: qualifiers.cloned(),
             },
         }
@@ -138,9 +138,9 @@ impl<'a> core::fmt::Display for PolicyOidRef<'a> {
 }
 
 /// Reads policy from a given input.
-pub(crate) fn read_certificate_policies<'a>(
-    input: untrusted::Input<'a>,
-) -> ReadCertificatePolicies<'a> {
+pub(crate) fn read_certificate_policies(
+    input: untrusted::Input,
+) -> ReadCertificatePolicies {
     ReadCertificatePolicies {
         reader: untrusted::Reader::new(input),
     }
@@ -223,7 +223,7 @@ mod tests {
     fn any_policy_oid_ref_should_equal_specific_policy_oid_ref_referencing_any_policy() {
         assert_eq!(
             PolicyOidRef::Any,
-            PolicyOidRef::Specific(untrusted::Input::from(&ANY_POLICY_OID)),
+            PolicyOidRef::Specific(untrusted::Input::from(ANY_POLICY_OID)),
         );
     }
 

@@ -136,10 +136,10 @@ pub fn win_hello_attest_tpm() {
             &anchors,
             &[inter],
             None,
-            key_usage.clone(),
+            key_usage,
             &[],
             // 1.3.6.1.4.1.311.21.31
-            &[&[1 * 40 + 3, 6, 1, 4, 1, 0x82, 55, 21, 31]],
+            &[&[40 + 3, 6, 1, 4, 1, 0x82, 55, 21, 31]],
         )
     );
     assert_eq!(
@@ -149,10 +149,10 @@ pub fn win_hello_attest_tpm() {
             &anchors,
             &[inter],
             None,
-            key_usage.clone(),
+            key_usage,
             &[],
             // 1.3.6.1.4.1.311.21.32
-            &[&[1 * 40 + 3, 6, 1, 4, 1, 0x82, 55, 21, 32]],
+            &[&[40 + 3, 6, 1, 4, 1, 0x82, 55, 21, 32]],
         )
     );
     assert_eq!(
@@ -162,11 +162,11 @@ pub fn win_hello_attest_tpm() {
             &anchors,
             &[inter],
             None,
-            key_usage.clone(),
+            key_usage,
             &[],
             &[
-                &[1 * 40 + 3, 6, 1, 4, 1, 0x82, 55, 21, 31],
-                &[1 * 40 + 3, 6, 1, 4, 1, 0x82, 55, 21, 32],
+                &[40 + 3, 6, 1, 4, 1, 0x82, 55, 21, 31],
+                &[40 + 3, 6, 1, 4, 1, 0x82, 55, 21, 32],
             ],
         )
     );
