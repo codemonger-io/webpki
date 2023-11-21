@@ -138,9 +138,7 @@ impl<'a> core::fmt::Display for PolicyOidRef<'a> {
 }
 
 /// Reads policy from a given input.
-pub(crate) fn read_certificate_policies(
-    input: untrusted::Input,
-) -> ReadCertificatePolicies {
+pub(crate) fn read_certificate_policies(input: untrusted::Input) -> ReadCertificatePolicies {
     ReadCertificatePolicies {
         reader: untrusted::Reader::new(input),
     }
