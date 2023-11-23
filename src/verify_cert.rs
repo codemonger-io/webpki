@@ -35,8 +35,8 @@ pub(crate) struct ChainOptions<'a, 'b> {
     pub(crate) user_initial_policy_set: &'a [&'a [u8]],
 }
 
-pub(crate) fn build_chain<'a, 'b>(
-    opts: &ChainOptions<'a, 'b>,
+pub(crate) fn build_chain<'b>(
+    opts: &ChainOptions<'_, 'b>,
     cert: &Cert,
     time: Option<time::Time>,
 ) -> Result<TrustAnchor<'b>, Error> {
@@ -46,8 +46,8 @@ pub(crate) fn build_chain<'a, 'b>(
     })
 }
 
-fn build_chain_inner<'a, 'b>(
-    opts: &ChainOptions<'a, 'b>,
+fn build_chain_inner<'b>(
+    opts: &ChainOptions<'_, 'b>,
     cert: &Cert,
     time: Option<time::Time>,
     sub_ca_count: usize,
@@ -802,7 +802,8 @@ mod tests {
             &intermediates,
             &make_end_entity(&issuer),
             None,
-        ).map(|_| ())
+        )
+        .map(|_| ())
     }
 
     #[test]

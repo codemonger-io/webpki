@@ -239,7 +239,11 @@ fn critical_extensions() {
             &[],
         )
     });
-    assert_eq!(res, Ok(anchors[0].clone()), "accept non-critical unknown extension");
+    assert_eq!(
+        res,
+        Ok(anchors[0].clone()),
+        "accept non-critical unknown extension"
+    );
 
     let ee = include_bytes!("critical_extensions/ee-cert-crit-unknown-ext.der");
     let res = webpki::EndEntityCert::try_from(&ee[..]).and_then(|cert| {
