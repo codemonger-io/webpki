@@ -19,7 +19,7 @@ fn check_cert(
 
     assert_eq!(
         cert.verify_for_usage(algs, &anchors, &[], Some(time), eku, &[]),
-        result
+        result.map(|_| anchors[0].clone())
     );
 }
 

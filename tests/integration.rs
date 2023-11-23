@@ -45,7 +45,7 @@ pub fn netflix() {
 
     let cert = webpki::EndEntityCert::try_from(ee).unwrap();
     assert_eq!(
-        Ok(()),
+        Ok(anchors[0].clone()),
         cert.verify_for_usage(
             ALL_SIGALGS,
             &anchors,
@@ -71,7 +71,7 @@ pub fn cloudflare_dns() {
 
     let cert = webpki::EndEntityCert::try_from(ee).unwrap();
     assert_eq!(
-        Ok(()),
+        Ok(anchors[0].clone()),
         cert.verify_for_usage(
             ALL_SIGALGS,
             &anchors,
@@ -130,7 +130,7 @@ pub fn win_hello_attest_tpm() {
 
     let cert = webpki::EndEntityCert::try_from(ee).unwrap();
     assert_eq!(
-        Ok(()),
+        Ok(anchors[0].clone()),
         cert.verify_for_usage_with_policy_check(
             ALL_SIGALGS,
             &anchors,
@@ -156,7 +156,7 @@ pub fn win_hello_attest_tpm() {
         )
     );
     assert_eq!(
-        Ok(()),
+        Ok(anchors[0].clone()),
         cert.verify_for_usage_with_policy_check(
             ALL_SIGALGS,
             &anchors,
@@ -184,7 +184,7 @@ pub fn wpt() {
 
     let cert = webpki::EndEntityCert::try_from(ee).unwrap();
     assert_eq!(
-        Ok(()),
+        Ok(anchors[0].clone()),
         cert.verify_for_usage(
             ALL_SIGALGS,
             &anchors,
@@ -207,7 +207,7 @@ pub fn ed25519() {
 
     let cert = webpki::EndEntityCert::try_from(ee).unwrap();
     assert_eq!(
-        Ok(()),
+        Ok(anchors[0].clone()),
         cert.verify_for_usage(
             ALL_SIGALGS,
             &anchors,
@@ -239,7 +239,7 @@ fn critical_extensions() {
             &[],
         )
     });
-    assert_eq!(res, Ok(()), "accept non-critical unknown extension");
+    assert_eq!(res, Ok(anchors[0].clone()), "accept non-critical unknown extension");
 
     let ee = include_bytes!("critical_extensions/ee-cert-crit-unknown-ext.der");
     let res = webpki::EndEntityCert::try_from(&ee[..]).and_then(|cert| {
@@ -284,7 +284,7 @@ fn read_ee_with_neg_serial() {
 
     let cert = webpki::EndEntityCert::try_from(ee).unwrap();
     assert_eq!(
-        Ok(()),
+        Ok(anchors[0].clone()),
         cert.verify_for_usage(
             ALL_SIGALGS,
             &anchors,

@@ -10,7 +10,10 @@ use crate::{der, Error};
 /// essential elements of trust anchors. The `TrustAnchor::try_from_cert_der`
 /// function allows converting X.509 certificates to to the minimized
 /// `TrustAnchor` representation, either at runtime or in a build script.
-#[derive(Debug)]
+///
+/// `PartialEq` for `TrustAnchor` compares only the pointer values of the
+/// underlying DER data.
+#[derive(Clone, Debug)]
 pub struct TrustAnchor<'a> {
     /// The value of the `subject` field of the trust anchor.
     pub subject: &'a [u8],
@@ -21,6 +24,9 @@ pub struct TrustAnchor<'a> {
     /// The value of a DER-encoded NameConstraints, containing name
     /// constraints to apply to the trust anchor, if any.
     pub name_constraints: Option<&'a [u8]>,
+
+    /// Underlying DER representation.
+    pub(crate) underlying: &'a [u8],
 }
 
 /// Trust anchors which may be used for authenticating servers.
@@ -51,6 +57,7 @@ impl<'a> TrustAnchor<'a> {
     /// certificate is self-signed or even that the certificate has the cA basic
     /// constraint.
     pub fn try_from_cert_der(cert_der: &'a [u8]) -> Result<Self, Error> {
+        let underlying = cert_der;
         let cert_der = untrusted::Input::from(cert_der);
 
         // XXX: `EndEntityOrCA::EndEntity` is used instead of `EndEntityOrCA::CA`
@@ -63,7 +70,12 @@ impl<'a> TrustAnchor<'a> {
         // parser doesn't allow extensions, so there's no need to worry about
         // embedded name constraints in a v1 certificate.
         match Cert::from_der(cert_der, EndEntityOrCa::EndEntity) {
-            Ok(cert) => Ok(Self::from(cert)),
+            Ok(cert) => Ok(TrustAnchor {
+                subject: cert.subject.as_slice_less_safe(),
+                spki: cert.spki.value().as_slice_less_safe(),
+                name_constraints: cert.name_constraints.map(|nc| nc.as_slice_less_safe()),
+                underlying,
+            }),
             Err(Error::UnsupportedCertVersion) => {
                 Self::from_v1_der(cert_der).or(Err(Error::BadDer))
             }
@@ -73,6 +85,7 @@ impl<'a> TrustAnchor<'a> {
 
     /// Parses a v1 certificate directly into a TrustAnchor.
     fn from_v1_der(cert_der: untrusted::Input<'a>) -> Result<Self, Error> {
+        let underlying = cert_der.as_slice_less_safe();
         // X.509 Certificate: https://tools.ietf.org/html/rfc5280#section-4.1.
         cert_der.read_all(Error::BadDer, |cert_der| {
             der::nested(cert_der, der::Tag::Sequence, Error::BadDer, |cert_der| {
@@ -90,6 +103,7 @@ impl<'a> TrustAnchor<'a> {
                         subject: subject.as_slice_less_safe(),
                         spki: spki.as_slice_less_safe(),
                         name_constraints: None,
+                        underlying,
                     })
                 });
 
@@ -101,18 +115,85 @@ impl<'a> TrustAnchor<'a> {
             })
         })
     }
+
+    /// Returns the underlying DER data.
+    pub fn as_der(&self) -> &[u8] {
+        self.underlying
+    }
 }
 
-impl<'a> From<Cert<'a>> for TrustAnchor<'a> {
-    fn from(cert: Cert<'a>) -> Self {
-        Self {
-            subject: cert.subject.as_slice_less_safe(),
-            spki: cert.spki.value().as_slice_less_safe(),
-            name_constraints: cert.name_constraints.map(|nc| nc.as_slice_less_safe()),
-        }
+impl<'a> PartialEq<TrustAnchor<'_>> for TrustAnchor<'a> {
+    fn eq(&self, other: &TrustAnchor<'_>) -> bool {
+        self.underlying.as_ptr() == other.underlying.as_ptr()
     }
 }
 
 fn skip(input: &mut untrusted::Reader, tag: der::Tag) -> Result<(), Error> {
     der::expect_tag_and_get_value(input, tag).map(|_| ())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn trust_anchors_should_be_equal_if_underlying_data_are_identical() {
+        let underlying = &[0u8, 1u8, 2u8, 3u8];
+        let subject = &[0u8, 1u8];
+        let spki = &[2u8, 3u8];
+        let name_constraints: Option<&[u8]> = Some(&[4u8, 5u8]);
+        assert_eq!(
+            TrustAnchor {
+                subject,
+                spki,
+                name_constraints,
+                underlying,
+            },
+            TrustAnchor {
+                subject,
+                spki,
+                name_constraints,
+                underlying,
+            },
+        );
+    }
+
+    #[test]
+    fn trust_anchors_should_not_be_equal_if_underlying_data_are_non_identical() {
+        // wraps with Vec to make sure distinct memory blocks are allocated
+        let underlying1 = &vec![0u8, 1u8, 2u8, 3u8];
+        let underlying2 = &vec![0u8, 1u8, 2u8, 3u8];
+        let subject = &[0u8, 1u8];
+        let spki = &[2u8, 3u8];
+        let name_constraints: Option<&[u8]> = Some(&[4u8, 5u8]);
+        assert_ne!(
+            TrustAnchor {
+                subject,
+                spki,
+                name_constraints,
+                underlying: underlying1,
+            },
+            TrustAnchor {
+                subject,
+                spki,
+                name_constraints,
+                underlying: underlying2,
+            },
+        );
+    }
+
+    #[test]
+    fn clone_trust_anchor_should_equal_the_original() {
+        let underlying = &[0u8, 1u8, 2u8, 3u8];
+        let subject = &[0u8, 1u8];
+        let spki = &[2u8, 3u8];
+        let name_constraints: Option<&[u8]> = Some(&[4u8, 5u8]);
+        let trust_anchor = TrustAnchor {
+            subject,
+            spki,
+            name_constraints,
+            underlying,
+        };
+        assert_eq!(trust_anchor, trust_anchor.clone());
+    }
 }

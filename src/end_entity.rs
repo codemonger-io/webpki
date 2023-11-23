@@ -77,16 +77,16 @@ impl<'a> EndEntityCert<'a> {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn verify_is_valid_cert(
+    fn verify_is_valid_cert<'b, 'c>(
         &self,
-        supported_sig_algs: &[&SignatureAlgorithm],
-        trust_anchors: &[TrustAnchor],
-        intermediate_certs: &[&[u8]],
+        supported_sig_algs: &'c [&SignatureAlgorithm],
+        trust_anchors: &'b [TrustAnchor<'b>],
+        intermediate_certs: &'c [&[u8]],
         time: Option<Time>,
         eku: KeyUsage,
-        crls: &[&dyn CertRevocationList],
-        user_initial_policy_set: &[&[u8]],
-    ) -> Result<(), Error> {
+        crls: &'c [&dyn CertRevocationList],
+        user_initial_policy_set: &'c [&[u8]],
+    ) -> Result<TrustAnchor<'b>, Error> {
         verify_cert::build_chain(
             &verify_cert::ChainOptions {
                 eku,
@@ -116,15 +116,15 @@ impl<'a> EndEntityCert<'a> {
     ///   of usage we're verifying the certificate for.
     /// * `crls` is the list of certificate revocation lists to check
     ///   the certificate against.
-    pub fn verify_for_usage(
+    pub fn verify_for_usage<'b, 'c>(
         &self,
-        supported_sig_algs: &[&SignatureAlgorithm],
-        trust_anchors: &[TrustAnchor],
-        intermediate_certs: &[&[u8]],
+        supported_sig_algs: &'c [&SignatureAlgorithm],
+        trust_anchors: &'b [TrustAnchor<'b>],
+        intermediate_certs: &'c [&[u8]],
         time: Option<Time>,
         usage: KeyUsage,
-        crls: &[&dyn CertRevocationList],
-    ) -> Result<(), Error> {
+        crls: &'c [&dyn CertRevocationList],
+    ) -> Result<TrustAnchor<'b>, Error> {
         self.verify_is_valid_cert(
             supported_sig_algs,
             trust_anchors,
@@ -146,16 +146,16 @@ impl<'a> EndEntityCert<'a> {
     ///   method is equivalent to [`EndEntityCert::verify_for_usage`] if this
     ///   slice is empty.
     #[allow(clippy::too_many_arguments)]
-    pub fn verify_for_usage_with_policy_check(
+    pub fn verify_for_usage_with_policy_check<'b, 'c>(
         &self,
-        supported_sig_algs: &[&SignatureAlgorithm],
-        trust_anchors: &[TrustAnchor],
-        intermediate_certs: &[&[u8]],
+        supported_sig_algs: &'c [&SignatureAlgorithm],
+        trust_anchors: &'b [TrustAnchor<'b>],
+        intermediate_certs: &'c [&[u8]],
         time: Option<Time>,
         usage: KeyUsage,
-        crls: &[&dyn CertRevocationList],
-        user_initial_policy_set: &[&[u8]],
-    ) -> Result<(), Error> {
+        crls: &'c [&dyn CertRevocationList],
+        user_initial_policy_set: &'c [&[u8]],
+    ) -> Result<TrustAnchor<'b>, Error> {
         self.verify_is_valid_cert(
             supported_sig_algs,
             trust_anchors,
@@ -185,13 +185,13 @@ impl<'a> EndEntityCert<'a> {
         The new `verify_for_usage` function expresses trust anchor and end entity purpose with the \
         key usage argument."
     )]
-    pub fn verify_is_valid_tls_server_cert(
+    pub fn verify_is_valid_tls_server_cert<'b, 'c>(
         &self,
-        supported_sig_algs: &[&SignatureAlgorithm],
-        &TlsServerTrustAnchors(trust_anchors): &TlsServerTrustAnchors,
-        intermediate_certs: &[&[u8]],
+        supported_sig_algs: &'c [&SignatureAlgorithm],
+        &TlsServerTrustAnchors(trust_anchors): &'b TlsServerTrustAnchors<'b>,
+        intermediate_certs: &'c [&[u8]],
         time: Option<Time>,
-    ) -> Result<(), Error> {
+    ) -> Result<TrustAnchor<'b>, Error> {
         self.verify_is_valid_cert(
             supported_sig_algs,
             trust_anchors,
@@ -222,14 +222,14 @@ impl<'a> EndEntityCert<'a> {
         The new `verify_for_usage` function expresses trust anchor and end entity purpose with the \
         key usage argument."
     )]
-    pub fn verify_is_valid_tls_client_cert(
+    pub fn verify_is_valid_tls_client_cert<'b, 'c>(
         &self,
-        supported_sig_algs: &[&SignatureAlgorithm],
-        &TlsClientTrustAnchors(trust_anchors): &TlsClientTrustAnchors,
-        intermediate_certs: &[&[u8]],
+        supported_sig_algs: &'c [&SignatureAlgorithm],
+        &TlsClientTrustAnchors(trust_anchors): &'b TlsClientTrustAnchors<'b>,
+        intermediate_certs: &'c [&[u8]],
         time: Option<Time>,
-        crls: &[&dyn CertRevocationList],
-    ) -> Result<(), Error> {
+        crls: &'c [&dyn CertRevocationList],
+    ) -> Result<TrustAnchor<'b>, Error> {
         self.verify_is_valid_cert(
             supported_sig_algs,
             trust_anchors,

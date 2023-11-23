@@ -22,10 +22,12 @@ use crate::{
     SignatureAlgorithm, TrustAnchor,
 };
 
-pub(crate) struct ChainOptions<'a> {
+pub(crate) struct ChainOptions<'a, 'b> {
     pub(crate) eku: KeyUsage,
     pub(crate) supported_sig_algs: &'a [&'a SignatureAlgorithm],
-    pub(crate) trust_anchors: &'a [TrustAnchor<'a>],
+    // TrustAnchor's contents have a distinct lifetime
+    // because they are returned from `build_chain`
+    pub(crate) trust_anchors: &'a [TrustAnchor<'b>],
     pub(crate) intermediate_certs: &'a [&'a [u8]],
     pub(crate) crls: &'a [&'a dyn CertRevocationList],
     /// OIDs of acceptable certificate policies.
@@ -33,24 +35,24 @@ pub(crate) struct ChainOptions<'a> {
     pub(crate) user_initial_policy_set: &'a [&'a [u8]],
 }
 
-pub(crate) fn build_chain(
-    opts: &ChainOptions,
+pub(crate) fn build_chain<'a, 'b>(
+    opts: &ChainOptions<'a, 'b>,
     cert: &Cert,
     time: Option<time::Time>,
-) -> Result<(), Error> {
+) -> Result<TrustAnchor<'b>, Error> {
     build_chain_inner(opts, cert, time, 0, &mut Budget::default()).map_err(|e| match e {
         ControlFlow::Break(err) => err,
         ControlFlow::Continue(err) => err,
     })
 }
 
-fn build_chain_inner(
-    opts: &ChainOptions,
+fn build_chain_inner<'a, 'b>(
+    opts: &ChainOptions<'a, 'b>,
     cert: &Cert,
     time: Option<time::Time>,
     sub_ca_count: usize,
     budget: &mut Budget,
-) -> Result<(), ControlFlow<Error, Error>> {
+) -> Result<TrustAnchor<'b>, ControlFlow<Error, Error>> {
     let used_as_ca = used_as_ca(&cert.ee_or_ca);
 
     check_issuer_independent_properties(cert, time, used_as_ca, sub_ca_count, opts.eku.inner)?;
@@ -95,12 +97,12 @@ fn build_chain_inner(
                 check_policy_tree(cert, opts.user_initial_policy_set)?;
             }
 
-            Ok(())
+            Ok(trust_anchor.clone())
         },
     );
 
     let err = match result {
-        Ok(()) => return Ok(()),
+        Ok(trust_anchor) => return Ok(trust_anchor),
         // Fatal errors should halt further path building.
         res @ Err(ControlFlow::Break(_)) => return res,
         // Non-fatal errors should be carried forward as the default_error for subsequent
@@ -681,18 +683,18 @@ impl KeyUsageMode {
     }
 }
 
-fn loop_while_non_fatal_error<V>(
+fn loop_while_non_fatal_error<T, V>(
     default_error: Error,
     values: V,
-    mut f: impl FnMut(V::Item) -> Result<(), ControlFlow<Error, Error>>,
-) -> Result<(), ControlFlow<Error, Error>>
+    mut f: impl FnMut(V::Item) -> Result<T, ControlFlow<Error, Error>>,
+) -> Result<T, ControlFlow<Error, Error>>
 where
     V: IntoIterator,
 {
     let mut error = default_error;
     for v in values {
         match f(v) {
-            Ok(()) => return Ok(()),
+            Ok(res) => return Ok(res),
             // Fatal errors should halt further looping.
             res @ Err(ControlFlow::Break(_)) => return res,
             // Non-fatal errors should be ranked by specificity and only returned
@@ -800,7 +802,7 @@ mod tests {
             &intermediates,
             &make_end_entity(&issuer),
             None,
-        )
+        ).map(|_| ())
     }
 
     #[test]
@@ -902,12 +904,12 @@ mod tests {
     }
 
     #[cfg(feature = "alloc")]
-    fn verify_chain(
-        trust_anchor_der: &[u8],
+    fn verify_chain<'a>(
+        trust_anchor_der: &'a [u8],
         intermediates_der: &[Vec<u8>],
         ee_cert_der: &[u8],
         budget: Option<Budget>,
-    ) -> Result<(), ControlFlow<Error, Error>> {
+    ) -> Result<TrustAnchor<'a>, ControlFlow<Error, Error>> {
         use crate::ECDSA_P256_SHA256;
         use crate::{EndEntityCert, Time};
 
