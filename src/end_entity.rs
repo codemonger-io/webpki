@@ -80,7 +80,7 @@ impl<'a> EndEntityCert<'a> {
     fn verify_is_valid_cert<'b, 'c>(
         &self,
         supported_sig_algs: &'c [&SignatureAlgorithm],
-        trust_anchors: &'b [TrustAnchor<'b>],
+        trust_anchors: &'c [TrustAnchor<'b>],
         intermediate_certs: &'c [&[u8]],
         time: Option<Time>,
         eku: KeyUsage,
@@ -119,7 +119,7 @@ impl<'a> EndEntityCert<'a> {
     pub fn verify_for_usage<'b, 'c>(
         &self,
         supported_sig_algs: &'c [&SignatureAlgorithm],
-        trust_anchors: &'b [TrustAnchor<'b>],
+        trust_anchors: &'c [TrustAnchor<'b>],
         intermediate_certs: &'c [&[u8]],
         time: Option<Time>,
         usage: KeyUsage,
@@ -149,7 +149,7 @@ impl<'a> EndEntityCert<'a> {
     pub fn verify_for_usage_with_policy_check<'b, 'c>(
         &self,
         supported_sig_algs: &'c [&SignatureAlgorithm],
-        trust_anchors: &'b [TrustAnchor<'b>],
+        trust_anchors: &'c [TrustAnchor<'b>],
         intermediate_certs: &'c [&[u8]],
         time: Option<Time>,
         usage: KeyUsage,
@@ -188,7 +188,7 @@ impl<'a> EndEntityCert<'a> {
     pub fn verify_is_valid_tls_server_cert<'b, 'c>(
         &self,
         supported_sig_algs: &'c [&SignatureAlgorithm],
-        &TlsServerTrustAnchors(trust_anchors): &'b TlsServerTrustAnchors<'b>,
+        &TlsServerTrustAnchors(trust_anchors): &'c TlsServerTrustAnchors<'b>,
         intermediate_certs: &'c [&[u8]],
         time: Option<Time>,
     ) -> Result<TrustAnchor<'b>, Error> {
@@ -225,7 +225,7 @@ impl<'a> EndEntityCert<'a> {
     pub fn verify_is_valid_tls_client_cert<'b, 'c>(
         &self,
         supported_sig_algs: &'c [&SignatureAlgorithm],
-        &TlsClientTrustAnchors(trust_anchors): &'b TlsClientTrustAnchors<'b>,
+        &TlsClientTrustAnchors(trust_anchors): &'c TlsClientTrustAnchors<'b>,
         intermediate_certs: &'c [&[u8]],
         time: Option<Time>,
         crls: &'c [&dyn CertRevocationList],
